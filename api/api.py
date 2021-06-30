@@ -19,8 +19,7 @@ def get_recipes():
 
 @app.route('/filtered_recipes/', methods=['GET'])
 def filtered_recipes():
-    sql = '''
-    '''
+    sql = 'SELECT R.Name, R.Description FROM Recipe R INNER JOIN RecipeIngredient RI ON Recipe.ID=RI.RecipeID'
     with engine.connect() as conn:
         result = conn.execute(text(sql))
         return {row.ID:{'Name':row.Name, 'Description':row.Description, 'Ingredients':row.Ingredients, 'Instructions':row.Instructions} for row in result}

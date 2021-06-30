@@ -17,7 +17,7 @@ def query(sql):
    list: Query Results
    """
    # Connect to 'finesse.db'
-   db = sqlite3.connect('C:\\Users\\alore\\Documents\\Learning\\Python\\Crummy\\db\\crummy.db')
+   db = sqlite3.connect('C:\\Users\\alore\\Documents\\Toychest\\JavaScript\\ReactJS\\crumby\\api\\db\\crummy.db')
 
    # Create database cursor for query execution....
    cursor = db.cursor()
