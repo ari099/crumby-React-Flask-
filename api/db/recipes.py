@@ -18,6 +18,7 @@ class CrummyAddRecipe(QtWidgets.QDialog, addDialog):
         self.recipeNameTextBox = self.findChild(QtWidgets.QTextEdit, "recipe_name_textedit")
         self.recipeDescriptionTextBox = self.findChild(QtWidgets.QTextEdit, "recipe_description_textedit")
         self.newIngredientTextBox = self.findChild(QtWidgets.QTextEdit, "new_ingredient_textedit")
+        self.newIngredientFormTextBox = self.findChild(QtWidgets.QTextEdit, "new_ingredient_form_textedit")
         self.newIngredientQuantityBox = self.findChild(QtWidgets.QDoubleSpinBox, "new_ingredient_quantity_spinbox")
         self.newIngredientUnitBox = self.findChild(QtWidgets.QComboBox, "new_ingredient_unit_combobox")
         self.ingredientsTableWidget = self.findChild(QtWidgets.QTableWidget, "ingredients_tablewidget")
@@ -61,6 +62,7 @@ class CrummyAddRecipe(QtWidgets.QDialog, addDialog):
             ingredient_name = ingredients_widget.item(row, 0).text()
             ingredient_quantity = ingredients_widget.item(row, 1).text()
             ingredient_unit = ingredients_widget.item(row, 2).text()
+            ingredient_form = ingredients_widget.item(row, 3).text()
             tag = ET.SubElement(ET.Element('Ingredient'), 'Ingredient')
             name_tag = ET.SubElement(ET.Element('Name'), 'Name')
             name_tag.text = ingredient_name
@@ -68,9 +70,12 @@ class CrummyAddRecipe(QtWidgets.QDialog, addDialog):
             quantity_tag.text = ingredient_quantity
             unit_tag = ET.SubElement(ET.Element('Unit'), 'Unit')
             unit_tag.text = ingredient_unit
+            form_tag = ET.SubElement(ET.Element('Form'), 'Form')
+            form_tag.text = ingredient_form
             tag.insert(0, name_tag)
             tag.insert(0, quantity_tag)
             tag.insert(0, unit_tag)
+            tag.insert(0, form_tag)
             ingredients_root.insert(1, tag)
 
         for row in range(0, instructions_widget.count()):
@@ -86,11 +91,13 @@ class CrummyAddRecipe(QtWidgets.QDialog, addDialog):
         newIngredientName = self.newIngredientTextBox.toPlainText()
         newIngredientQuantity = self.newIngredientQuantityBox.value()
         newIngredientUnit = self.newIngredientUnitBox.currentText()
+        newIngredientForm = self.newIngredientFormTextBox.toPlainText()
         if newIngredientName != "" and newIngredientQuantity != "" and newIngredientUnit != "":
             ingredientsTable.setRowCount(ingredientsTable.rowCount() + 1)
             ingredientsTable.setItem(ingredientsTable.rowCount() - 1, 0, QtWidgets.QTableWidgetItem(newIngredientName))
             ingredientsTable.setItem(ingredientsTable.rowCount() - 1, 1, QtWidgets.QTableWidgetItem(str(newIngredientQuantity)))
             ingredientsTable.setItem(ingredientsTable.rowCount() - 1, 2, QtWidgets.QTableWidgetItem(newIngredientUnit))
+            ingredientsTable.setItem(ingredientsTable.rowCount() - 1, 3, QtWidgets.QTableWidgetItem(newIngredientForm))
 
     def removeSelectedIngredientFromTable(self):
         ingredientsTable = self.ingredientsTableWidget

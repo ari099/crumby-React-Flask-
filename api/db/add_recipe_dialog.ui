@@ -69,7 +69,7 @@
     <rect>
      <x>410</x>
      <y>150</y>
-     <width>381</width>
+     <width>221</width>
      <height>31</height>
     </rect>
    </property>
@@ -115,6 +115,11 @@
    <column>
     <property name="text">
      <string>Unit</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>Form</string>
     </property>
    </column>
   </widget>
@@ -196,9 +201,9 @@
   <widget class="QLabel" name="label_5">
    <property name="geometry">
     <rect>
-     <x>800</x>
+     <x>640</x>
      <y>160</y>
-     <width>55</width>
+     <width>62</width>
      <height>16</height>
     </rect>
    </property>
@@ -209,9 +214,9 @@
   <widget class="QDoubleSpinBox" name="new_ingredient_quantity_spinbox">
    <property name="geometry">
     <rect>
-     <x>861</x>
+     <x>701</x>
      <y>150</y>
-     <width>51</width>
+     <width>58</width>
      <height>31</height>
     </rect>
    </property>
@@ -219,9 +224,9 @@
   <widget class="QLabel" name="label_6">
    <property name="geometry">
     <rect>
-     <x>920</x>
+     <x>770</x>
      <y>160</y>
-     <width>31</width>
+     <width>38</width>
      <height>16</height>
     </rect>
    </property>
@@ -232,9 +237,9 @@
   <widget class="QComboBox" name="new_ingredient_unit_combobox">
    <property name="geometry">
     <rect>
-     <x>950</x>
+     <x>800</x>
      <y>150</y>
-     <width>73</width>
+     <width>80</width>
      <height>31</height>
     </rect>
    </property>
@@ -316,6 +321,32 @@
    </property>
    <property name="placeholderText">
     <string>Enter instruction text here...</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_7">
+   <property name="geometry">
+    <rect>
+     <x>890</x>
+     <y>160</y>
+     <width>38</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Form:</string>
+   </property>
+  </widget>
+  <widget class="QTextEdit" name="new_ingredient_form_textedit">
+   <property name="geometry">
+    <rect>
+     <x>930</x>
+     <y>150</y>
+     <width>91</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="placeholderText">
+    <string>Enter form...</string>
    </property>
   </widget>
  </widget>

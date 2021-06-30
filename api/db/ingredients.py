@@ -16,6 +16,7 @@ class CrummyAddIngredient(QtWidgets.QDialog, addDialog):
         self.ingredientName = self.findChild(QtWidgets.QTextEdit, 'ingredient_name_textedit')
         self.quantity = self.findChild(QtWidgets.QSpinBox, 'quantity_spinbox')
         self.unitOfMeasure = self.findChild(QtWidgets.QComboBox, 'unit_combobox')
+        self.ingredientForm = self.findChild(QtWidgets.QTextEdit, 'ingredient_form_textedit')
         self.buttonBox = self.findChild(QtWidgets.QDialogButtonBox, 'buttonBox')
         self.buttonBox.accepted.connect(self.addIngredient)
 
@@ -23,7 +24,8 @@ class CrummyAddIngredient(QtWidgets.QDialog, addDialog):
         ingredientName = self.ingredientName.toPlainText()
         quantity = self.quantity.value()
         unit = self.unitOfMeasure.currentText()
-        addIngredient(ingredientName, int(quantity), unit)
+        form = self.ingredientForm.toPlainText()
+        addIngredient(ingredientName, int(quantity), unit, form)
 
 class MainWindow(QtWidgets.QMainWindow, mainWindow):
     def __init__(self):
@@ -37,6 +39,7 @@ class MainWindow(QtWidgets.QMainWindow, mainWindow):
         self.model.setHeaderData(1, Qt.Horizontal, "Name")
         self.model.setHeaderData(2, Qt.Horizontal, "Quantity")
         self.model.setHeaderData(3, Qt.Horizontal, "Unit")
+        self.model.setHeaderData(4, Qt.Horizontal, "Form")
         self.model.select()
 
         # Setting up the view

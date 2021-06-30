@@ -89,7 +89,7 @@ def getAllIngredients():
     '''
     return query("SELECT * FROM Ingredient")
 
-def addIngredient(name, quantity, unit):
+def addIngredient(name, quantity, unit, form):
     '''
     Add new ingredient to the Ingredients table
 
@@ -99,5 +99,6 @@ def addIngredient(name, quantity, unit):
     name(string): Name of Ingredient
     quantity(float): Quantity of Ingredient
     unit(string): Unit of how much of the ingredient would be
+    form(string): The form the ingredient is in (chopped, etc.)
     '''
-    query(f"INSERT INTO Ingredient VALUES ({int(random.random()*100)}, '{name}', {quantity}, '{unit}')")
+    query(f"INSERT INTO Ingredient VALUES ({int(random.random()*100)}, '{name}', {quantity}, '{unit}', '{form}')")
