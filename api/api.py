@@ -1,15 +1,39 @@
 import time, random
 from flask import Flask, request
 from sqlalchemy import text, create_engine
+import xml.etree.ElementTree as ET
 
 app = Flask(__name__)
 engine = create_engine("sqlite+pysqlite:///db/crummy.db", echo=False, future=True)
+
+def updateRecipeIngredients():
+    '''
+    Update RecipeIngredients table
+    '''
+    with engine.connect() as conn:
+        ingredients_db = conn.execute(text('SELECT Name, Quantity, Unit, Form FROM Ingredient'))
+        ingredients_db_records = [{'Name':row[0], 'Quantity':row[1], 'Unit':row[2], 'Form':row[3]} for row in list(ingredients_db)]
+
+    with engine.connect() as conn:
+        recipes = conn.execute(text('SELECT * FROM Recipe'))
+        for recipe in recipes:
+            ingredients_root = ET.fromstring(recipe.Ingredients)
+            ingredient_tag_details = [{t.tag:t.text for t in list(child)} for child in ingredients_root.findall('./Ingredient')]
+            ingredient_tag_count = len(ingredient_tag_details)
+            ingredient_db_count = 0
+            for row in ingredient_tag_details:
+                db_results = next(record['Name'] for record in ingredients_db_records if record['Name'] == row['Name'])
+                if len(db_results) > 0: ingredient_db_count += 1
+
+            print("Tag", ingredient_tag_count, "DB", ingredient_db_count)
+            if ingredient_tag_count == ingredient_db_count:
+                print("Tag", ingredient_tag_count, "DB", ingredient_db_count)
 
 @app.route('/ingredients/', methods=['GET'])
 def get_ingredients():
     with engine.connect() as conn:
         result = conn.execute(text('SELECT * FROM Ingredient'))
-        return {row.ID:{'Name':row.Name, 'Quantity':row.Quantity, 'Unit':row.Unit} for row in result}
+        return {row.ID:{'Name':row.Name, 'Quantity':row.Quantity, 'Unit':row.Unit, 'Form':row.Form} for row in result}
 
 @app.route('/recipes/', methods=['GET'])
 def get_recipes():
@@ -62,3 +86,5 @@ def add_recipe():
             [{"i":round(random.random() * 1000), "n":recipe_name, "d":recipe_description, "ing":recipe_ingredients, "ins":recipe_instructions}]
         )
         conn.commit()
+
+    updateRecipeIngredients()
