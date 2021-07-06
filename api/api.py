@@ -9,25 +9,46 @@ engine = create_engine("sqlite+pysqlite:///db/crummy.db", echo=False, future=Tru
 def updateRecipeIngredients():
     '''
     Update RecipeIngredients table
+
+    Add/Remove records from RecipeIngredients table in database. If not all the Ingredients for a given recipe exist, then no relations will be recorded for that recipe
     '''
+    # Remove all rows from RecipeIngredient table
     with engine.connect() as conn:
-        ingredients_db = conn.execute(text('SELECT Name, Quantity, Unit, Form FROM Ingredient'))
-        ingredients_db_records = [{'Name':row[0], 'Quantity':row[1], 'Unit':row[2], 'Form':row[3]} for row in list(ingredients_db)]
+        conn.execute(text('DELETE FROM RecipeIngredient'))
+        conn.commit()
 
-    with engine.connect() as conn:
-        recipes = conn.execute(text('SELECT * FROM Recipe'))
+        # Get all ingredients from Ingredients table
+        # Then, place in a manipulatable Python list
+        db_ingredients = list(conn.execute(text('select ID, Unit, Quantity, Name from Ingredient')))
+        db_ingredients = [{'ID':str(i[0]), 'Unit':str(i[1]), 'Quantity':str(i[2]), 'Name':i[3]} for i in db_ingredients]
+
+        # Get all recipes from Recipes table
+        recipes = conn.execute(text('SELECT ID, Ingredients FROM Recipe'))
+
+        # For each recipe...
         for recipe in recipes:
+            # Get the Ingredients XML...
             ingredients_root = ET.fromstring(recipe.Ingredients)
-            ingredient_tag_details = [{t.tag:t.text for t in list(child)} for child in ingredients_root.findall('./Ingredient')]
-            ingredient_tag_count = len(ingredient_tag_details)
-            ingredient_db_count = 0
-            for row in ingredient_tag_details:
-                db_results = next(record['Name'] for record in ingredients_db_records if record['Name'] == row['Name'])
-                if len(db_results) > 0: ingredient_db_count += 1
+            # Convert to Python list of dictionaries for each Ingredient in Ingredients XML
+            xml = [{elem.tag:elem.text for elem in ingredient if elem.tag == 'Name' or elem.tag == 'Quantity' or elem.tag == 'Unit'} for ingredient in ingredients_root]
+            # Getting the amount of Ingredients in the particular recipe
+            xml_size = len(xml)
+            db_size = 0 # Counter variable to count how many ingredients actually appear in the database
+            # Find out how many ingredients in the XML are actually present in the Ingredients table Python list
+            total = []
+            for elem in xml:
+                results = list(filter(lambda item: item['Name'] == elem['Name'] and float(item['Quantity']) >= float(elem['Quantity']) and item['Unit'] == elem['Unit'], db_ingredients))
+                # Increment counter variable
+                db_size += len(results)
+                total.append(results)
 
-            print("Tag", ingredient_tag_count, "DB", ingredient_db_count)
-            if ingredient_tag_count == ingredient_db_count:
-                print("Tag", ingredient_tag_count, "DB", ingredient_db_count)
+            # Adding new records for the matches found
+            if xml_size == db_size:
+                print(total)
+                for result in total:
+                    with engine.connect() as conn:
+                        conn.execute(text('INSERT INTO RecipeIngredient (RecipeID, IngredientID) VALUES ({0}, {1})'.format(recipe.ID, result[0]['ID'])))
+                        conn.commit()
 
 @app.route('/ingredients/', methods=['GET'])
 def get_ingredients():
@@ -41,9 +62,10 @@ def get_recipes():
         result = conn.execute(text('SELECT * FROM Recipe'))
         return {row.ID:{'Name':row.Name, 'Description':row.Description, 'Ingredients':row.Ingredients, 'Instructions':row.Instructions} for row in result}
 
-@app.route('/filtered_recipes/', methods=['GET'])
-def filtered_recipes():
-    sql = 'SELECT R.Name, R.Description FROM Recipe R INNER JOIN RecipeIngredient RI ON Recipe.ID=RI.RecipeID'
+@app.route('/crumbs/', methods=['GET'])
+def crumbs():
+    updateRecipeIngredients()
+    sql = 'SELECT DISTINCT R.Name, R.Description FROM Recipe R INNER JOIN RecipeIngredient RI ON R.ID=RI.RecipeID'
     with engine.connect() as conn:
         result = conn.execute(text(sql))
         return {row.ID:{'Name':row.Name, 'Description':row.Description, 'Ingredients':row.Ingredients, 'Instructions':row.Instructions} for row in result}
@@ -53,6 +75,8 @@ def delete(id, table):
     with engine.connect() as conn:
         result = conn.execute(text(f'DELETE FROM {table.capitalize()} WHERE ID = {id}'))
         conn.commit()
+
+    updateRecipeIngredients()
 
 @app.route('/add_ingredient/', methods=['POST'])
 def add_ingredient():
@@ -69,6 +93,8 @@ def add_ingredient():
             [{"i":round(random.random() * 1000), "n":ingredient_name, "q":ingredient_quantity, "u":ingredient_unit}]
         )
         conn.commit()
+
+    updateRecipeIngredients()
 
 @app.route('/add_recipe/', methods=['POST'])
 def add_recipe():
