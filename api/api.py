@@ -1,5 +1,5 @@
 import time, random
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from sqlalchemy import text, create_engine
 import xml.etree.ElementTree as ET
 
@@ -44,7 +44,7 @@ def updateRecipeIngredients():
 
             # Adding new records for the matches found
             if xml_size == db_size:
-                print(total)
+                # print(total)
                 for result in total:
                     with engine.connect() as conn:
                         conn.execute(text('INSERT INTO RecipeIngredient (RecipeID, IngredientID) VALUES ({0}, {1})'.format(recipe.ID, result[0]['ID'])))
@@ -65,12 +65,12 @@ def get_recipes():
 @app.route('/crumbs/', methods=['GET'])
 def crumbs():
     updateRecipeIngredients()
-    sql = 'SELECT DISTINCT R.Name, R.Description FROM Recipe R INNER JOIN RecipeIngredient RI ON R.ID=RI.RecipeID'
+    sql = 'SELECT DISTINCT R.ID, R.Name, R.Description, R.Ingredients, R.Instructions FROM Recipe R INNER JOIN RecipeIngredient RI ON R.ID=RI.RecipeID'
     with engine.connect() as conn:
         result = conn.execute(text(sql))
         return {row.ID:{'Name':row.Name, 'Description':row.Description, 'Ingredients':row.Ingredients, 'Instructions':row.Instructions} for row in result}
 
-@app.route('/delete/<id>/<table>', methods=['GET'])
+@app.route('/delete/<id>/<table>', methods=['DELETE'])
 def delete(id, table):
     with engine.connect() as conn:
         result = conn.execute(text(f'DELETE FROM {table.capitalize()} WHERE ID = {id}'))
@@ -114,3 +114,19 @@ def add_recipe():
         conn.commit()
 
     updateRecipeIngredients()
+
+@app.route('/update_recipe/<id>', methods=['POST'])
+def update_recipe(id):
+    info = request.get_json()
+    with engine.connect() as conn:
+        conn.execute(text('UPDATE Recipe SET {1} = \'{2}\' WHERE ID = {0}'.format(id, info['field'], info['value'])))
+        conn.commit()
+        return jsonify(success=True)
+
+@app.route('/update_ingredient/<id>', methods=['POST'])
+def update_ingredient(id):
+    info = request.get_json()
+    with engine.connect() as conn:
+        conn.execute(text('UPDATE Ingredient SET {1} = \'{2}\' WHERE ID = {0}'.format(id, info['field'], info['value'])))
+        conn.commit()
+        return jsonify(success=True)
