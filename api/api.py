@@ -52,18 +52,27 @@ def updateRecipeIngredients():
 
 @app.route('/ingredients/', methods=['GET'])
 def get_ingredients():
+    '''
+    Obtaining all ingredients from the database
+    '''
     with engine.connect() as conn:
         result = conn.execute(text('SELECT * FROM Ingredient'))
         return {row.ID:{'Name':row.Name, 'Quantity':row.Quantity, 'Unit':row.Unit, 'Form':row.Form} for row in result}
 
 @app.route('/recipes/', methods=['GET'])
 def get_recipes():
+    '''
+    Obtaining all recipes from the database
+    '''
     with engine.connect() as conn:
         result = conn.execute(text('SELECT * FROM Recipe'))
         return {row.ID:{'Name':row.Name, 'Description':row.Description, 'Ingredients':row.Ingredients, 'Instructions':row.Instructions} for row in result}
 
 @app.route('/crumbs/', methods=['GET'])
 def crumbs():
+    '''
+    Obtaining all the recipes based on what's on hand in the Ingredients table
+    '''
     updateRecipeIngredients()
     sql = 'SELECT DISTINCT R.ID, R.Name, R.Description, R.Ingredients, R.Instructions FROM Recipe R INNER JOIN RecipeIngredient RI ON R.ID=RI.RecipeID'
     with engine.connect() as conn:
@@ -72,6 +81,9 @@ def crumbs():
 
 @app.route('/delete/<id>/<table>', methods=['DELETE'])
 def delete(id, table):
+    '''
+    Remove a recipe from the Recipes table
+    '''
     with engine.connect() as conn:
         result = conn.execute(text(f'DELETE FROM {table.capitalize()} WHERE ID = {id}'))
         conn.commit()
@@ -80,6 +92,9 @@ def delete(id, table):
 
 @app.route('/add_ingredient/', methods=['POST'])
 def add_ingredient():
+    '''
+    Adding a new ingredient to the database
+    '''
     # Data will be received as a POST HTTP message
     data = request.get_json()
     ingredient_name = data['ingredient_name']
@@ -98,6 +113,9 @@ def add_ingredient():
 
 @app.route('/add_recipe/', methods=['POST'])
 def add_recipe():
+    '''
+    Adding a new recipe to the database
+    '''
     # Data will be received as a POST HTTP message
     data = request.get_json()
     recipe_name = data['recipe_name']
@@ -117,6 +135,9 @@ def add_recipe():
 
 @app.route('/update_recipe/<id>', methods=['POST'])
 def update_recipe(id):
+    '''
+    Update a particular field in the Recipe table
+    '''
     info = request.get_json()
     with engine.connect() as conn:
         conn.execute(text('UPDATE Recipe SET {1} = \'{2}\' WHERE ID = {0}'.format(id, info['field'], info['value'])))
@@ -125,6 +146,9 @@ def update_recipe(id):
 
 @app.route('/update_ingredient/<id>', methods=['POST'])
 def update_ingredient(id):
+    '''
+    Update a particular field in the Ingredient table
+    '''
     info = request.get_json()
     with engine.connect() as conn:
         conn.execute(text('UPDATE Ingredient SET {1} = \'{2}\' WHERE ID = {0}'.format(id, info['field'], info['value'])))

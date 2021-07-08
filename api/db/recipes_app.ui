@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>Recipes</class>
- <widget class="QMainWindow" name="Recipes">
+ <widget class="QDialog" name="Recipes">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -31,20 +31,28 @@
   <property name="windowTitle">
    <string>Recipes</string>
   </property>
-  <widget class="QWidget" name="centralwidget">
-   <widget class="QTableView" name="recipe_list_tableview">
+  <widget class="QWidget" name="centralwidget" native="true">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>811</width>
+     <height>661</height>
+    </rect>
+   </property>
+   <widget class="QTableWidget" name="recipes_list">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>10</y>
+      <y>40</y>
       <width>791</width>
-      <height>641</height>
+      <height>611</height>
      </rect>
     </property>
     <property name="selectionBehavior">
      <enum>QAbstractItemView::SelectRows</enum>
     </property>
-    <attribute name="verticalHeaderCascadingSectionResizes">
+    <attribute name="horizontalHeaderStretchLastSection">
      <bool>true</bool>
     </attribute>
    </widget>

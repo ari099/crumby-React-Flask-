@@ -6,9 +6,14 @@ from urllib.request import Request, urlopen
 from urllib.parse import urlencode, quote_plus
 import urllib
 
+# UI Files...
 mainWindow = uic.loadUiType("crumby.ui")[0]
 instructionsDlg = uic.loadUiType("instructions_dlg.ui")[0]
 ingredientsDlg = uic.loadUiType("ingredients_dlg.ui")[0]
+recipesDlg = uic.loadUiType("recipes_app.ui")[0]
+recipesAddDialog = uic.loadUiType("add_recipe_dialog.ui")[0]
+ingredientsDlg = uic.loadUiType("ingredients_app.ui")[0]
+ingredientsAddDialog = uic.loadUiType("add_ingredient_dialog.ui")[0]
 
 class CrumbsModel(QtCore.QAbstractListModel):
     def __init__(self, data):
@@ -25,6 +30,199 @@ class CrumbsModel(QtCore.QAbstractListModel):
     def rowCount(self, index):
         # The length of the outer list.
         return len(self._data)
+
+class AddRecipeDlg(QtWidgets.QDialog, recipesAddDialog):
+    """ Open AddRecipe Dialog Box """
+    def __init__(self, parent=None):
+        QtWidgets.QDialog.__init__(self, parent)
+        self.setupUi(self)
+        self.recipeNameTextBox = self.findChild(QtWidgets.QTextEdit, "recipe_name_textedit")
+        self.recipeDescriptionTextBox = self.findChild(QtWidgets.QTextEdit, "recipe_description_textedit")
+        self.newIngredientTextBox = self.findChild(QtWidgets.QTextEdit, "new_ingredient_textedit")
+        self.newIngredientFormTextBox = self.findChild(QtWidgets.QTextEdit, "new_ingredient_form_textedit")
+        self.newIngredientQuantityBox = self.findChild(QtWidgets.QDoubleSpinBox, "new_ingredient_quantity_spinbox")
+        self.newIngredientUnitBox = self.findChild(QtWidgets.QComboBox, "new_ingredient_unit_combobox")
+        self.ingredientsTableWidget = self.findChild(QtWidgets.QTableWidget, "ingredients_tablewidget")
+        self.addIngredientButton = self.findChild(QtWidgets.QPushButton, "add_ingredient_pushbutton")
+        self.addIngredientButton.clicked.connect(self.addIngredientToTable)
+        self.removeIngredientButton = self.findChild(QtWidgets.QPushButton, "remove_ingredient_pushbutton")
+        self.removeIngredientButton.clicked.connect(self.removeSelectedIngredientFromTable)
+        self.instructionsListBox = self.findChild(QtWidgets.QListWidget, "instructions_listwidget")
+        self.newInstructionTextBox = self.findChild(QtWidgets.QTextEdit, "new_instruction_textedit")
+        self.addInstructionButton = self.findChild(QtWidgets.QPushButton, "add_instruction_pushbutton")
+        self.addInstructionButton.clicked.connect(self.addInstructionToListBox)
+        self.removeInstructionButton = self.findChild(QtWidgets.QPushButton, "remove_instruction_pushbutton")
+        self.removeInstructionButton.clicked.connect(self.removeSelectedInstructionsFromListBox)
+        self.dlgButtonBox = self.findChild(QtWidgets.QDialogButtonBox, "addRecipeButtonBox")
+        self.dlgButtonBox.accepted.connect(self.saveToDB)
+
+    def saveToDB(self):
+        name = self.recipeNameTextBox.toPlainText()
+        if name == "":
+            ctypes.windll.user32.MessageBoxW(0, "Please fill all fields", "ERROR", 0)
+            return
+
+        description = self.recipeDescriptionTextBox.toPlainText()
+        if description == "":
+            ctypes.windll.user32.MessageBoxW(0, "Please fill all fields", "ERROR", 0)
+            return
+
+        ingredients_widget = self.ingredientsTableWidget
+        if ingredients_widget.rowCount() == 0:
+            ctypes.windll.user32.MessageBoxW(0, "You need ingredients for a meal!", "ERROR", 0)
+            return
+
+        instructions_widget = self.instructionsListBox
+        if instructions_widget.count() == 0:
+            ctypes.windll.user32.MessageBoxW(0, "You need instructions to know what to do!", "ERROR", 0)
+            return
+
+        ingredients_root = ET.fromstring("<Ingredients></Ingredients>")
+        instructions_root = ET.fromstring("<Instructions></Instructions>")
+        for row in range(0, ingredients_widget.rowCount()):
+            ingredient_name = ingredients_widget.item(row, 0).text()
+            ingredient_quantity = ingredients_widget.item(row, 1).text()
+            ingredient_unit = ingredients_widget.item(row, 2).text()
+            ingredient_form = ingredients_widget.item(row, 3).text()
+            tag = ET.SubElement(ET.Element('Ingredient'), 'Ingredient')
+            name_tag = ET.SubElement(ET.Element('Name'), 'Name')
+            name_tag.text = ingredient_name
+            quantity_tag = ET.SubElement(ET.Element('Quantity'), 'Quantity')
+            quantity_tag.text = ingredient_quantity
+            unit_tag = ET.SubElement(ET.Element('Unit'), 'Unit')
+            unit_tag.text = ingredient_unit
+            form_tag = ET.SubElement(ET.Element('Form'), 'Form')
+            form_tag.text = ingredient_form
+            tag.insert(0, name_tag)
+            tag.insert(0, quantity_tag)
+            tag.insert(0, unit_tag)
+            tag.insert(0, form_tag)
+            ingredients_root.insert(1, tag)
+
+        for row in range(0, instructions_widget.count()):
+            instruction_text = instructions_widget.item(row).text()
+            instruction_tag = ET.SubElement(ET.Element('Instruction'), 'Instruction')
+            instruction_tag.text = instruction_text
+            instructions_root.insert(1, instruction_tag)
+
+        new_data = {
+            "recipe_name": name,
+            "recipe_description": description,
+            "recipe_instructions": ET.tostring(instructions_root).decode('utf-8'),
+            "recipe_ingredients": ET.tostring(ingredients_root).decode('utf-8')
+        }
+        req = Request('http://127.0.0.1:5000/add_recipe/'.format(self.recipe_id))
+        req.add_header('Content-Type', 'application/json')
+        response = urlopen(req, json.dumps(new_data).encode('utf8'))
+
+    def addIngredientToTable(self):
+        ingredientsTable = self.ingredientsTableWidget
+        newIngredientName = self.newIngredientTextBox.toPlainText()
+        newIngredientQuantity = self.newIngredientQuantityBox.value()
+        newIngredientUnit = self.newIngredientUnitBox.currentText()
+        newIngredientForm = self.newIngredientFormTextBox.toPlainText()
+        if newIngredientName != "" and newIngredientQuantity != "" and newIngredientUnit != "":
+            ingredientsTable.setRowCount(ingredientsTable.rowCount() + 1)
+            ingredientsTable.setItem(ingredientsTable.rowCount() - 1, 0, QtWidgets.QTableWidgetItem(newIngredientName))
+            ingredientsTable.setItem(ingredientsTable.rowCount() - 1, 1, QtWidgets.QTableWidgetItem(str(newIngredientQuantity)))
+            ingredientsTable.setItem(ingredientsTable.rowCount() - 1, 2, QtWidgets.QTableWidgetItem(newIngredientUnit))
+            ingredientsTable.setItem(ingredientsTable.rowCount() - 1, 3, QtWidgets.QTableWidgetItem(newIngredientForm))
+
+    def removeSelectedIngredientFromTable(self):
+        ingredientsTable = self.ingredientsTableWidget
+        if ingredientsTable.currentRow() != None:
+            currentRow = ingredientsTable.currentRow()
+            ingredientsTable.removeRow(currentRow)
+        else: ctypes.windll.user32.MessageBoxW(0, "Please select a row to remove", "ERROR", 0)
+
+    def addInstructionToListBox(self):
+        instructionList = self.instructionsListBox
+        instructionText = self.newInstructionTextBox.toPlainText()
+        instructionList.addItem(QtWidgets.QListWidgetItem(instructionText))
+
+    def removeSelectedInstructionsFromListBox(self):
+        instructionList = self.instructionsListBox
+        if instructionList.currentItem() != None:
+            instructionList.takeItem(instructionList.currentRow())
+
+class RecipesApp(QtWidgets.QDialog, recipesDlg):
+    def __init__(self):
+        QtWidgets.QDialog.__init__(self)
+        mainWindow.__init__(self)
+        self.setupUi(self)
+        req = Request('http://127.0.0.1:5000/recipes/')
+        apidata = json.loads(urlopen(req).read().decode('utf-8'))
+
+        # Setting up the view
+        self.recipe_list = self.findChild(QtWidgets.QTableWidget, 'recipes_list')
+        self.add_recipe = self.findChild(QtWidgets.QAction, 'actionAdd_Recipe')
+        self.add_recipe.triggered.connect(self.add)
+        self.remove_recipe = self.findChild(QtWidgets.QAction, 'actionRemove_Recipe')
+        self.remove_recipe.triggered.connect(self.remove)
+
+    def add(self):
+        dlg = AddRecipeDlg()
+        dlg.exec_()
+
+    def remove(self):
+        recipesTable = self.recipe_list
+        if recipesTable.currentRow() != None:
+            currentRow = recipesTable.currentRow()
+            recipesTable.removeRow(currentRow)
+        else: ctypes.windll.user32.MessageBoxW(0, "Please select a row to remove", "ERROR", 0)
+
+class AddIngredientDlg(QtWidgets.QDialog, ingredientsAddDialog):
+    """ Open AddIngredient Dialog Box"""
+    def __init__(self, parent=None):
+        QtWidgets.QDialog.__init__(self, parent)
+        self.setupUi(self)
+        self.ingredientName = self.findChild(QtWidgets.QTextEdit, 'ingredient_name_textedit')
+        self.quantity = self.findChild(QtWidgets.QSpinBox, 'quantity_spinbox')
+        self.unitOfMeasure = self.findChild(QtWidgets.QComboBox, 'unit_combobox')
+        self.ingredientForm = self.findChild(QtWidgets.QTextEdit, 'ingredient_form_textedit')
+        self.buttonBox = self.findChild(QtWidgets.QDialogButtonBox, 'buttonBox')
+        self.buttonBox.accepted.connect(self.addIngredient)
+
+    def addIngredient(self):
+        ingredientName = self.ingredientName.toPlainText()
+        quantity = self.quantity.value()
+        unit = self.unitOfMeasure.currentText()
+        form = self.ingredientForm.toPlainText()
+        new_data = {
+            "ingredient_name": ingredientName,
+            "ingredient_quantity": quantity,
+            "ingredient_unit": unit
+        }
+        req = Request('http://127.0.0.1:5000/add_ingredient/'.format(self.recipe_id))
+        req.add_header('Content-Type', 'application/json')
+        response = urlopen(req, json.dumps(new_data).encode('utf8'))
+
+class IngredientsApp(QtWidgets.QDialog, ingredientsDlg):
+    def __init__(self):
+        QtWidgets.QDialog.__init__(self)
+        mainWindow.__init__(self)
+        self.setupUi(self)
+        req = Request('http://127.0.0.1:5000/ingredients/')
+        apidata = json.loads(urlopen(req).read().decode('utf-8'))
+
+        # Setting up the view
+        self.ingredients_list = self.findChild(QtWidgets.QTableWidget, 'ingredients_list')
+        self.add_ingredient = self.findChild(QtWidgets.QAction, 'actionAdd_Ingredient')
+        self.add_ingredient.triggered.connect(self.add)
+        self.remove_ingredient = self.findChild(QtWidgets.QAction, 'actionRemove_Ingredient')
+        self.remove_ingredient.triggered.connect(self.remove)
+
+    def add(self):
+        dlg = AddIngredientDlg()
+        dlg.exec_()
+
+    def remove(self):
+        """ Remove selected row from Ingredients QTableWidget """
+        ingredients_list = self.ingredients_list
+        if ingredients_list.currentRow() != None:
+            currentRow = ingredients_list.currentRow()
+            ingredients_list.removeRow(currentRow)
+        else: ctypes.windll.user32.MessageBoxW(0, "Please select a row to remove", "ERROR", 0)
 
 class InstructionsDialog(QtWidgets.QDialog, instructionsDlg):
     """ Open InstructionsDialog Dialog Box """
