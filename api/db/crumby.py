@@ -10,9 +10,9 @@ import urllib
 mainWindow = uic.loadUiType("crumby.ui")[0]
 instructionsDlg = uic.loadUiType("instructions_dlg.ui")[0]
 ingredientsDlg = uic.loadUiType("ingredients_dlg.ui")[0]
-recipesDlg = uic.loadUiType("recipes_app.ui")[0]
+recipesApp = uic.loadUiType("recipes_app.ui")[0]
 recipesAddDialog = uic.loadUiType("add_recipe_dialog.ui")[0]
-ingredientsDlg = uic.loadUiType("ingredients_app.ui")[0]
+ingredientsApp = uic.loadUiType("ingredients_app.ui")[0]
 ingredientsAddDialog = uic.loadUiType("add_ingredient_dialog.ui")[0]
 
 class CrumbsModel(QtCore.QAbstractListModel):
@@ -111,7 +111,7 @@ class AddRecipeDlg(QtWidgets.QDialog, recipesAddDialog):
             "recipe_instructions": ET.tostring(instructions_root).decode('utf-8'),
             "recipe_ingredients": ET.tostring(ingredients_root).decode('utf-8')
         }
-        req = Request('http://127.0.0.1:5000/add_recipe/'.format(self.recipe_id))
+        req = Request('http://127.0.0.1:5000/add_recipe/')
         req.add_header('Content-Type', 'application/json')
         response = urlopen(req, json.dumps(new_data).encode('utf8'))
 
@@ -145,16 +145,22 @@ class AddRecipeDlg(QtWidgets.QDialog, recipesAddDialog):
         if instructionList.currentItem() != None:
             instructionList.takeItem(instructionList.currentRow())
 
-class RecipesApp(QtWidgets.QDialog, recipesDlg):
+class RecipesApp(QtWidgets.QDialog, recipesApp):
     def __init__(self):
         QtWidgets.QDialog.__init__(self)
         mainWindow.__init__(self)
         self.setupUi(self)
         req = Request('http://127.0.0.1:5000/recipes/')
         apidata = json.loads(urlopen(req).read().decode('utf-8'))
+        data = [list(v.values()) for v in list(apidata.values())]
 
         # Setting up the view
         self.recipe_list = self.findChild(QtWidgets.QTableWidget, 'recipes_list')
+        for row in data:
+            self.recipe_list.setRowCount(self.recipe_list.rowCount() + 1)
+            self.recipe_list.setItem(self.recipe_list.rowCount() - 1, 0, QtWidgets.QTableWidgetItem(row[3]))
+            self.recipe_list.setItem(self.recipe_list.rowCount() - 1, 1, QtWidgets.QTableWidgetItem(row[0]))
+
         self.add_recipe = self.findChild(QtWidgets.QAction, 'actionAdd_Recipe')
         self.add_recipe.triggered.connect(self.add)
         self.remove_recipe = self.findChild(QtWidgets.QAction, 'actionRemove_Recipe')
@@ -193,20 +199,27 @@ class AddIngredientDlg(QtWidgets.QDialog, ingredientsAddDialog):
             "ingredient_quantity": quantity,
             "ingredient_unit": unit
         }
-        req = Request('http://127.0.0.1:5000/add_ingredient/'.format(self.recipe_id))
+        req = Request('http://127.0.0.1:5000/add_ingredient/')
         req.add_header('Content-Type', 'application/json')
         response = urlopen(req, json.dumps(new_data).encode('utf8'))
 
-class IngredientsApp(QtWidgets.QDialog, ingredientsDlg):
+class IngredientsApp(QtWidgets.QDialog, ingredientsApp):
     def __init__(self):
         QtWidgets.QDialog.__init__(self)
         mainWindow.__init__(self)
         self.setupUi(self)
         req = Request('http://127.0.0.1:5000/ingredients/')
         apidata = json.loads(urlopen(req).read().decode('utf-8'))
+        data = [list(v.values()) for v in list(apidata.values())]
 
         # Setting up the view
         self.ingredients_list = self.findChild(QtWidgets.QTableWidget, 'ingredients_list')
+        for row in data:
+            self.ingredients_list.setRowCount(self.ingredients_list.rowCount() + 1)
+            self.ingredients_list.setItem(self.ingredients_list.rowCount() - 1, 0, QtWidgets.QTableWidgetItem(row[1]))
+            self.ingredients_list.setItem(self.ingredients_list.rowCount() - 1, 1, QtWidgets.QTableWidgetItem(str(row[2])))
+            self.ingredients_list.setItem(self.ingredients_list.rowCount() - 1, 2, QtWidgets.QTableWidgetItem(row[3]))
+
         self.add_ingredient = self.findChild(QtWidgets.QAction, 'actionAdd_Ingredient')
         self.add_ingredient.triggered.connect(self.add)
         self.remove_ingredient = self.findChild(QtWidgets.QAction, 'actionRemove_Ingredient')
@@ -378,6 +391,10 @@ class Crumby(QtWidgets.QMainWindow, mainWindow):
         self.instructions_button.clicked.connect(self.showInstructions)
         self.crumbs_list_view.setModel(self.model)
         self.crumbs_list_view.selectionModel().selectionChanged.connect(self.showRecipe)
+        self.openRecipesApp = self.findChild(QtWidgets.QAction, "recipesActionOpen")
+        self.openRecipesApp.triggered.connect(lambda: RecipesApp().exec_())
+        self.openIngredientsApp = self.findChild(QtWidgets.QAction, "ingredientsActionOpen")
+        self.openIngredientsApp.triggered.connect(lambda: IngredientsApp().exec_())
         self.show()
 
     def showRecipe(self):
