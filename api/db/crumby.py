@@ -174,7 +174,14 @@ class RecipesApp(QtWidgets.QDialog, recipesApp):
         recipesTable = self.recipe_list
         if recipesTable.currentRow() != None:
             currentRow = recipesTable.currentRow()
+            recipeInfo = {
+                "recipe_name": recipesTable.itemAt(row, 0).text(),
+                "recipe_description": recipesTable.itemAt(row, 1).text()
+            }
             recipesTable.removeRow(currentRow)
+            req = Request('http://127.0.0.1:5000/remove_recipe/')
+            req.add_header('Content-Type', 'application/json')
+            response = urlopen(req, json.dumps(new_data).encode('utf8'))
         else: ctypes.windll.user32.MessageBoxW(0, "Please select a row to remove", "ERROR", 0)
 
 class AddIngredientDlg(QtWidgets.QDialog, ingredientsAddDialog):
@@ -232,9 +239,17 @@ class IngredientsApp(QtWidgets.QDialog, ingredientsApp):
     def remove(self):
         """ Remove selected row from Ingredients QTableWidget """
         ingredients_list = self.ingredients_list
+        ingredientInfo = {
+            "ingredient_name": ingredients_list.itemAt(row, 0).text(),
+            "ingredient_quantity": ingredients_list.itemAt(row, 1).text(),
+            "ingredient_unit": ingredients_list.itemAt(row, 2).text()
+        }
         if ingredients_list.currentRow() != None:
             currentRow = ingredients_list.currentRow()
             ingredients_list.removeRow(currentRow)
+            req = Request('http://127.0.0.1:5000/remove_ingredient/')
+            req.add_header('Content-Type', 'application/json')
+            response = urlopen(req, json.dumps(new_data).encode('utf8'))
         else: ctypes.windll.user32.MessageBoxW(0, "Please select a row to remove", "ERROR", 0)
 
 class InstructionsDialog(QtWidgets.QDialog, instructionsDlg):

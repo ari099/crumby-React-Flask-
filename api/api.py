@@ -104,12 +104,12 @@ def add_ingredient():
     # Data will then be added as a record in the database
     with engine.connect() as conn:
         result = conn.execute(
-            text('INSERT INTO Ingredient (i, n, q, u) VALUES (:i, :n, :q, :u)'),
-            [{"i":round(random.random() * 1000), "n":ingredient_name, "q":ingredient_quantity, "u":ingredient_unit}]
+            text("INSERT INTO Ingredient VALUES ({0}, '{1}', {2}, '{3}', 'na')".format(round(random.random() * 1000), ingredient_name, ingredient_quantity, ingredient_unit))
         )
         conn.commit()
 
     updateRecipeIngredients()
+    return {'Status':'200 OK'}
 
 @app.route('/add_recipe/', methods=['POST'])
 def add_recipe():
@@ -126,12 +126,53 @@ def add_recipe():
     # Data will then be added as a record in the database
     with engine.connect() as conn:
         result = conn.execute(
-            text('INSERT INTO Recipe (i, n, d, ing, ins) VALUES (:i, :n, :d, :ing, :ins)'),
-            [{"i":round(random.random() * 1000), "n":recipe_name, "d":recipe_description, "ing":recipe_ingredients, "ins":recipe_instructions}]
+            text("INSERT INTO Recipe VALUES ({0}, '{1}', {2}, '{3}', '{4}')".format(round(random.random() * 1000), recipe_name, recipe_description, recipe_ingredients, recipe_instructions))
         )
         conn.commit()
 
     updateRecipeIngredients()
+    return {'Status':'200 OK'}
+
+@app.route('/remove_recipe/', methods=['POST'])
+def remove_recipe():
+    '''
+    Remove a recipe from database
+    '''
+    # Data will be received as a POST HTTP message
+    data = request.get_json()
+    recipe_name = data['recipe_name']
+    recipe_description = data['recipe_description']
+
+    # Data will then be added as a record in the database
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("DELETE FROM Recipe WHERE Name = '{0}' AND Description = '{1}')".format(recipe_name, recipe_description))
+        )
+        conn.commit()
+
+    updateRecipeIngredients()
+    return {'Status':'200 OK'}
+
+@app.route('/remove_ingredient/', methods=['POST'])
+def remove_ingredient():
+    '''
+    Remove a recipe from database
+    '''
+    # Data will be received as a POST HTTP message
+    data = request.get_json()
+    ingredient_name = data['ingredient_name']
+    ingredient_quantity = data['ingredient_quantity']
+    ingredient_unit = data['ingredient_unit']
+
+    # Data will then be added as a record in the database
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("DELETE FROM Ingredient WHERE Name = '{0}' AND Quantity = {1} AND Unit = '{2}')".format(ingredient_name, ingredient_quantity, ingredient_unit))
+        )
+        conn.commit()
+
+    updateRecipeIngredients()
+    return {'Status':'200 OK'}
 
 @app.route('/update_recipe/<id>', methods=['POST'])
 def update_recipe(id):
@@ -144,6 +185,8 @@ def update_recipe(id):
         conn.commit()
         return jsonify(success=True)
 
+    return {'Status':'200 OK'}
+
 @app.route('/update_ingredient/<id>', methods=['POST'])
 def update_ingredient(id):
     '''
@@ -154,3 +197,5 @@ def update_ingredient(id):
         conn.execute(text('UPDATE Ingredient SET {1} = \'{2}\' WHERE ID = {0}'.format(id, info['field'], info['value'])))
         conn.commit()
         return jsonify(success=True)
+
+    return {'Status':'200 OK'}
